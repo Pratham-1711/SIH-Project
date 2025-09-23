@@ -244,16 +244,18 @@ export default function Snap() {
         created_at: nowIso,
         updated_at: nowIso,
       });
+      toast({ title: "Submitted", description: "Thank you for reporting." });
+      navigate(`/submitted/${id}`);
+      return;
     } catch (err) {
       // Non-blocking
     } finally {
       setSubmitting(false);
     }
 
-    toast({ title: "Snap saved", description: "View it in My Snaps" });
-    navigate("/snaps");
   }
 
+  const hasMedia = images.length > 0 || !!audioDataUrl;
   const timeStr = useMemo(() => {
     const s = Math.floor(recordMs / 1000);
     const m = Math.floor(s / 60);

@@ -35,9 +35,12 @@ export default function Snap() {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const loc = useLocationState();
+
+  const MAX_IMAGES = 5;
 
   useEffect(() => {
     if (!loc.live && !loc.cityLine) loc.startLive();

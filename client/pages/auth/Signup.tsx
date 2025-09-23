@@ -1,9 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import FormScreen from "@/components/auth/FormScreen";
-import { auth, db, serverTimestamp } from "@/lib/firebase";
-import { sendSignInLinkToEmail } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db, serverTimestamp } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import { toast } from "@/hooks/use-toast";
 
 export default function Signup() {
@@ -41,16 +40,19 @@ export default function Signup() {
           // Persist pending profile to complete after verification
           try {
             localStorage.setItem("app:pendingUser", JSON.stringify({ first, last, phone, email }));
-            localStorage.setItem("emailForSignIn", email);
           } catch {}
 
           try {
-            const actionCodeSettings = {
-              url: `${window.location.origin}/auth/verify-email?email=${encodeURIComponent(email)}`,
-              handleCodeInApp: true,
-            } as const;
-            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-            toast({ title: "Verification sent", description: `Check ${email} for the sign-in link.` });
+            const res = await fetch("/api/auth/send-code", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, name: `${first} ${last}`.trim() }),
+            });
+            if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              throw new Error(data?.error || `HTTP ${res.status}`);
+            }
+            toast({ title: "Verification sent", description: `Check ${email} for the 6-digit code.` });
           } catch (err: any) {
             toast({ title: "Failed to send email", description: String(err?.message ?? err) });
             return;

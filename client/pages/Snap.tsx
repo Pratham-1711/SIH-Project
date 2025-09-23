@@ -108,7 +108,8 @@ export default function Snap() {
       };
       mr.onstop = async () => {
         const blob = new Blob(chunks, { type: mime ?? "audio/webm" });
-        const dataUrl = await readFileAsDataUrl(new File([blob], "voice-note"));
+        const file = new File([blob], "voice-note.webm", { type: mime ?? "audio/webm" });
+        const dataUrl = await readFileAsDataUrl(file);
         setAudioDataUrl(dataUrl);
         if (timerRef.current) {
           window.clearInterval(timerRef.current);
@@ -341,45 +342,46 @@ export default function Snap() {
               <Loader2 className="size-4 animate-spin" />
             </div>
           ) : null}
-          {/* AI Auto-fill */}
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={aiLoading || !hasMedia || aiDisabled}
-            onClick={() =>
-              runAI("Generate a concise description from the media")
-            }
-            className="absolute bottom-2 right-12 h-8 rounded-full px-2.5 text-xs shadow-sm"
-            aria-label="AI Auto-fill"
-          >
-            <Wand2 className="mr-1 size-4" />
-            Auto-fill
-          </Button>
-          {/* Mic control */}
-          {!recording ? (
+          {/* Controls: AI + Mic */}
+          <div className="absolute bottom-3 right-3 flex items-center gap-2">
             <Button
               type="button"
               variant="secondary"
-              size="icon"
-              onClick={startRecording}
-              className="absolute bottom-3 right-3 rounded-full shadow-sm"
-              aria-label="Record voice note"
+              size="sm"
+              disabled={aiLoading || !hasMedia || aiDisabled}
+              onClick={() =>
+                runAI("Generate a concise description from the media")
+              }
+              className="h-8 rounded-full px-2.5 text-xs shadow-sm"
+              aria-label="AI Auto-fill"
             >
-              <Mic />
+              <Wand2 className="mr-1 size-4" />
+              Auto-fill
             </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={stopRecording}
-              className="absolute bottom-3 right-3 rounded-full shadow-sm"
-              aria-label="Stop recording"
-            >
-              <Square />
-            </Button>
-          )}
+            {!recording ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={startRecording}
+                className="rounded-full shadow-sm"
+                aria-label="Record voice note"
+              >
+                <Mic />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                onClick={stopRecording}
+                className="rounded-full shadow-sm"
+                aria-label="Stop recording"
+              >
+                <Square />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="pt-1">

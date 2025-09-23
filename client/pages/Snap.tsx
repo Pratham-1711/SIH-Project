@@ -209,11 +209,15 @@ export default function Snap() {
         audioUrl = await getDownloadURL(audioRef);
       }
 
-      // Build media_files array according to required structure
-      const media_files = [
-        ...imageUrls.map((url) => ({ type: "image", url })),
-        ...(audioUrl ? [{ type: "audio", url: audioUrl }] : []),
-      ];
+      // Build fixed-length media_files array: up to 5 images + 1 audio
+      const media_files: { type: string; url: string }[] = Array.from({ length: 6 }, () => ({ type: "", url: "" }));
+      for (let i = 0; i < Math.min(imageUrls.length, 5); i++) {
+        media_files[i] = { type: "image", url: imageUrls[i] };
+      }
+      if (audioUrl) {
+        const idx = Math.min(imageUrls.length, 5); // place audio after images
+        if (idx < 6) media_files[idx] = { type: "audio", url: audioUrl };
+      }
 
       const u = userStore.get();
       const user_id = u?.id || "anonymous";

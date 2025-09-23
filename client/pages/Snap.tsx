@@ -170,6 +170,7 @@ export default function Snap() {
   }
 
   async function onSubmit() {
+    if (submitting) return;
     const title = description
       ? `${description.substring(0, 40)}${description.length > 40 ? "…" : ""}`
       : "New Snap";
@@ -187,32 +188,57 @@ export default function Snap() {
       image: images[0],
     });
 
-    // Upload first image to Firebase Storage and create complaint document
+    // Upload media to Firebase Storage and create complaint document
     try {
-      let mediaUrl = "";
-      if (images[0]) {
-        const imgRef = ref(storage, `complaints/${id}/image_0`);
-        await uploadString(imgRef, images[0], "data_url");
-        mediaUrl = await getDownloadURL(imgRef);
+      setSubmitting(true);
+
+      // Upload all images
+      const imageUrls: string[] = [];
+      for (let i = 0; i < images.length; i++) {
+        const imgRef = ref(storage, `complaints/${id}/image_${i}`);
+        await uploadString(imgRef, images[i], "data_url");
+        const url = await getDownloadURL(imgRef);
+        imageUrls.push(url);
       }
+
+      // Upload audio if present
+      let audioUrl: string | null = null;
+      if (audioDataUrl) {
+        const audioRef = ref(storage, `complaints/${id}/voice_note`);
+        await uploadString(audioRef, audioDataUrl, "data_url");
+        audioUrl = await getDownloadURL(audioRef);
+      }
+
+      // Build media_files array according to required structure
+      const media_files = [
+        ...imageUrls.map((url) => ({ type: "image", url })),
+        ...(audioUrl ? [{ type: "audio", url: audioUrl }] : []),
+      ];
+
       const u = userStore.get();
       const user_id = u?.id || "anonymous";
       const coords = loc.coords;
+      const nowIso = new Date().toISOString();
+
       await setDoc(doc(db, "complaints", id), {
         complaint_id: id,
         user_id,
         title,
         description,
-        media_url: mediaUrl,
         category: "general",
-        location: coords ? { lat: coords.lat, lng: coords.lon } : undefined,
+        media_files,
+        location: coords
+          ? { lattitude: coords.lat, longitude: coords.lon }
+          : undefined,
         status: "pending",
         priority: "medium",
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: nowIso,
+        updated_at: nowIso,
       });
     } catch (err) {
       // Non-blocking
+    } finally {
+      setSubmitting(false);
     }
 
     toast({ title: "Snap saved", description: "View it in My Snaps" });

@@ -1,6 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import FormScreen from "@/components/auth/FormScreen";
+import { auth, db, serverTimestamp } from "@/lib/firebase";
+import { sendSignInLinkToEmail } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { toast } from "@/hooks/use-toast";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -33,31 +37,25 @@ export default function Signup() {
           const first = String(fd.get("first") || "");
           const last = String(fd.get("last") || "");
           const phone = String(fd.get("phone") || "");
-          const user_id = crypto.randomUUID();
+
+          // Persist pending profile to complete after verification
           try {
-            const next = {
-              id: user_id,
-              first,
-              last,
-              email,
-              phone,
-              role: "citizen",
-            };
-            localStorage.setItem("app:user", JSON.stringify(next));
-            localStorage.setItem("app:promptLocation", "1");
+            localStorage.setItem("app:pendingUser", JSON.stringify({ first, last, phone, email }));
+            localStorage.setItem("emailForSignIn", email);
           } catch {}
+
           try {
-            const { db, serverTimestamp } = await import("@/lib/firebase");
-            const { doc, setDoc } = await import("firebase/firestore");
-            await setDoc(doc(db, "users", user_id), {
-              user_id,
-              name: `${first} ${last}`.trim(),
-              phone,
-              email,
-              role: "citizen",
-              joined_at: serverTimestamp(),
-            });
-          } catch {}
+            const actionCodeSettings = {
+              url: `${window.location.origin}/auth/verify-email?email=${encodeURIComponent(email)}`,
+              handleCodeInApp: true,
+            } as const;
+            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+            toast({ title: "Verification sent", description: `Check ${email} for the sign-in link.` });
+          } catch (err: any) {
+            toast({ title: "Failed to send email", description: String(err?.message ?? err) });
+            return;
+          }
+
           navigate(`/auth/verify-email?email=${encodeURIComponent(email)}`);
         }}
         className="grid gap-4"

@@ -108,7 +108,9 @@ export default function Snap() {
       };
       mr.onstop = async () => {
         const blob = new Blob(chunks, { type: mime ?? "audio/webm" });
-        const file = new File([blob], "voice-note.webm", { type: mime ?? "audio/webm" });
+        const file = new File([blob], "voice-note.webm", {
+          type: mime ?? "audio/webm",
+        });
         const dataUrl = await readFileAsDataUrl(file);
         setAudioDataUrl(dataUrl);
         if (timerRef.current) {
@@ -179,7 +181,11 @@ export default function Snap() {
   async function onSubmit() {
     if (submitting) return;
     if (!hasMedia && !description.trim()) {
-      toast({ title: "Add details", description: "Add at least one photo/voice note or type a short description." });
+      toast({
+        title: "Add details",
+        description:
+          "Add at least one photo/voice note or type a short description.",
+      });
       return;
     }
     const title = description
@@ -221,7 +227,10 @@ export default function Snap() {
       }
 
       // Build fixed-length media_files array: up to 5 images + 1 audio
-      const media_files: { type: string; url: string }[] = Array.from({ length: 6 }, () => ({ type: "", url: "" }));
+      const media_files: { type: string; url: string }[] = Array.from(
+        { length: 6 },
+        () => ({ type: "", url: "" }),
+      );
       for (let i = 0; i < Math.min(imageUrls.length, 5); i++) {
         media_files[i] = { type: "image", url: imageUrls[i] };
       }
@@ -259,7 +268,6 @@ export default function Snap() {
     } finally {
       setSubmitting(false);
     }
-
   }
 
   const timeStr = useMemo(() => {

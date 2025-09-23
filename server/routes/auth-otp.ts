@@ -51,7 +51,8 @@ export const verifyCode: RequestHandler = async (req, res) => {
     otpStore.delete(email.toLowerCase());
     return res.status(400).json({ error: "Code expired" });
   }
-  if (entry.code !== code) return res.status(400).json({ error: "Invalid code" });
+  if (entry.code !== code)
+    return res.status(400).json({ error: "Invalid code" });
   otpStore.delete(email.toLowerCase());
   res.json({ ok: true });
 };

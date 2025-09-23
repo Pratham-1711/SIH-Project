@@ -39,7 +39,10 @@ export default function Signup() {
 
           // Persist pending profile to complete after verification
           try {
-            localStorage.setItem("app:pendingUser", JSON.stringify({ first, last, phone, email }));
+            localStorage.setItem(
+              "app:pendingUser",
+              JSON.stringify({ first, last, phone, email }),
+            );
           } catch {}
 
           try {
@@ -52,9 +55,15 @@ export default function Signup() {
               const data = await res.json().catch(() => ({}));
               throw new Error(data?.error || `HTTP ${res.status}`);
             }
-            toast({ title: "Verification sent", description: `Check ${email} for the 6-digit code.` });
+            toast({
+              title: "Verification sent",
+              description: `Check ${email} for the 6-digit code.`,
+            });
           } catch (err: any) {
-            toast({ title: "Failed to send email", description: String(err?.message ?? err) });
+            toast({
+              title: "Failed to send email",
+              description: String(err?.message ?? err),
+            });
             return;
           }
 

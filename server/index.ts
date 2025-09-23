@@ -22,6 +22,8 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
   app.post("/api/ai/describe", aiDescribe);
+  app.post("/api/auth/send-code", sendCode);
+  app.post("/api/auth/verify-code", verifyCode);
 
   return app;
 }

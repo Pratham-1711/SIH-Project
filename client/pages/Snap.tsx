@@ -17,7 +17,7 @@ import { useLocationState } from "@/context/location";
 import type { AiDescribeRequest, AiDescribeResponse } from "@shared/api";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { db, storage, serverTimestamp } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { doc, setDoc } from "firebase/firestore";
 import { userStore } from "@/data/user";

@@ -70,10 +70,19 @@ export default function Snap() {
   }
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const dataUrl = await readFileAsDataUrl(f);
-    setImages((prev) => [...prev, dataUrl]);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const remaining = Math.max(0, MAX_IMAGES - images.length);
+    const slice = files.slice(0, remaining);
+    if (files.length > remaining) {
+      toast({
+        title: `Maximum ${MAX_IMAGES} images`,
+        description: `Only the first ${slice.length} image(s) were added.`,
+      });
+    }
+    const dataUrls = await Promise.all(slice.map((f) => readFileAsDataUrl(f)));
+    setImages((prev) => [...prev, ...dataUrls]);
+    e.currentTarget.value = "";
   }
 
   function removeImage(idx: number) {

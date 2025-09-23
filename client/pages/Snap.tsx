@@ -171,6 +171,10 @@ export default function Snap() {
 
   async function onSubmit() {
     if (submitting) return;
+    if (!hasMedia && !description.trim()) {
+      toast({ title: "Add details", description: "Add at least one photo/voice note or type a short description." });
+      return;
+    }
     const title = description
       ? `${description.substring(0, 40)}${description.length > 40 ? "…" : ""}`
       : "New Snap";
@@ -375,7 +379,7 @@ export default function Snap() {
           <Button
             className="w-full"
             onClick={onSubmit}
-            disabled={!description.trim() || submitting}
+            disabled={(!hasMedia && !description.trim()) || submitting}
           >
             <Check className="mr-2" /> Submit
           </Button>

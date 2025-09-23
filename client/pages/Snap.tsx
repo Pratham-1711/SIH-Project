@@ -370,7 +370,7 @@ export default function Snap() {
           <Button
             className="w-full"
             onClick={onSubmit}
-            disabled={!description.trim()}
+            disabled={!description.trim() || submitting}
           >
             <Check className="mr-2" /> Submit
           </Button>

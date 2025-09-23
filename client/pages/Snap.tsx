@@ -271,6 +271,7 @@ export default function Snap() {
           onChange={onFileChange}
           type="file"
           accept="image/*"
+          multiple
           capture="environment"
           className="hidden"
         />

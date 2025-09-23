@@ -227,9 +227,10 @@ export default function Snap() {
         description,
         category: "general",
         media_files,
-        location: coords
-          ? { lattitude: coords.lat, longitude: coords.lon }
-          : undefined,
+        location: {
+          lattitude: typeof coords?.lat === "number" ? coords.lat : 0,
+          longitude: typeof coords?.lon === "number" ? coords.lon : 0,
+        },
         status: "pending",
         priority: "medium",
         created_at: nowIso,

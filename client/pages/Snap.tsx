@@ -34,6 +34,7 @@ export default function Snap() {
   const [description, setDescription] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiDisabled, setAiDisabled] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
@@ -48,11 +49,11 @@ export default function Snap() {
 
   // Auto-AI when media changes and user hasn't typed yet
   useEffect(() => {
-    if ((images.length > 0 || audioDataUrl) && !dirty) {
+    if ((images.length > 0 || audioDataUrl) && !dirty && !aiDisabled) {
       void runAI("Auto-filled from media");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images, audioDataUrl]);
+  }, [images, audioDataUrl, aiDisabled]);
 
   const hasMedia = images.length > 0 || !!audioDataUrl;
 
@@ -155,7 +156,12 @@ export default function Snap() {
         const data = await res.json().catch(() => ({}));
         const msg = data?.error || `AI error (${res.status})`;
         setAiError(msg);
-        toast({ title: "AI unavailable", description: msg });
+        if (res.status === 501) {
+          setAiDisabled(true);
+        }
+        if (!aiDisabled) {
+          toast({ title: "AI unavailable", description: msg });
+        }
         setAiLoading(false);
         return;
       }
@@ -255,7 +261,6 @@ export default function Snap() {
 
   }
 
-  const hasMedia = images.length > 0 || !!audioDataUrl;
   const timeStr = useMemo(() => {
     const s = Math.floor(recordMs / 1000);
     const m = Math.floor(s / 60);
@@ -341,7 +346,7 @@ export default function Snap() {
             type="button"
             variant="secondary"
             size="sm"
-            disabled={aiLoading || !hasMedia}
+            disabled={aiLoading || !hasMedia || aiDisabled}
             onClick={() =>
               runAI("Generate a concise description from the media")
             }

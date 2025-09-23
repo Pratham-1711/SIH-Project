@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { aiDescribe } from "./routes/ai-describe";
+import { sendCode, verifyCode } from "./routes/auth-otp";
 
 export function createServer() {
   const app = express();

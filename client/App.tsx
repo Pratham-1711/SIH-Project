@@ -23,6 +23,7 @@ import Start from "./pages/auth/Start";
 import Intro2 from "./pages/auth/Intro2";
 import Repost from "./pages/Repost";
 import Snap from "./pages/Snap";
+import Submitted from "./pages/Submitted";
 
 const App = () => (
   <TooltipProvider>
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/auth/intro2" element={<Intro2 />} />
           <Route path="/snaps" element={<Snaps />} />
           <Route path="/snap" element={<Snap />} />
+          <Route path="/submitted/:id" element={<Submitted />} />
           <Route path="/account" element={<Account />} />
           <Route path="/more" element={<More />} />
           <Route path="/repost" element={<Repost />} />

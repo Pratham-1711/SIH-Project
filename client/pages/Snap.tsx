@@ -17,7 +17,7 @@ import { useLocationState } from "@/context/location";
 import type { AiDescribeRequest, AiDescribeResponse } from "@shared/api";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { db, storage, serverTimestamp } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
 import { ref, uploadString, getDownloadURL } from "firebase/storage";
 import { doc, setDoc } from "firebase/firestore";
 import { userStore } from "@/data/user";
@@ -34,10 +34,14 @@ export default function Snap() {
   const [description, setDescription] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [aiDisabled, setAiDisabled] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const loc = useLocationState();
+
+  const MAX_IMAGES = 5;
 
   useEffect(() => {
     if (!loc.live && !loc.cityLine) loc.startLive();
@@ -45,11 +49,11 @@ export default function Snap() {
 
   // Auto-AI when media changes and user hasn't typed yet
   useEffect(() => {
-    if ((images.length > 0 || audioDataUrl) && !dirty) {
+    if ((images.length > 0 || audioDataUrl) && !dirty && !aiDisabled) {
       void runAI("Auto-filled from media");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [images, audioDataUrl]);
+  }, [images, audioDataUrl, aiDisabled]);
 
   const hasMedia = images.length > 0 || !!audioDataUrl;
 
@@ -67,10 +71,19 @@ export default function Snap() {
   }
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    const dataUrl = await readFileAsDataUrl(f);
-    setImages((prev) => [...prev, dataUrl]);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const remaining = Math.max(0, MAX_IMAGES - images.length);
+    const slice = files.slice(0, remaining);
+    if (files.length > remaining) {
+      toast({
+        title: `Maximum ${MAX_IMAGES} images`,
+        description: `Only the first ${slice.length} image(s) were added.`,
+      });
+    }
+    const dataUrls = await Promise.all(slice.map((f) => readFileAsDataUrl(f)));
+    setImages((prev) => [...prev, ...dataUrls]);
+    e.currentTarget.value = "";
   }
 
   function removeImage(idx: number) {
@@ -95,7 +108,10 @@ export default function Snap() {
       };
       mr.onstop = async () => {
         const blob = new Blob(chunks, { type: mime ?? "audio/webm" });
-        const dataUrl = await readFileAsDataUrl(new File([blob], "voice-note"));
+        const file = new File([blob], "voice-note.webm", {
+          type: mime ?? "audio/webm",
+        });
+        const dataUrl = await readFileAsDataUrl(file);
         setAudioDataUrl(dataUrl);
         if (timerRef.current) {
           window.clearInterval(timerRef.current);
@@ -143,7 +159,12 @@ export default function Snap() {
         const data = await res.json().catch(() => ({}));
         const msg = data?.error || `AI error (${res.status})`;
         setAiError(msg);
-        toast({ title: "AI unavailable", description: msg });
+        if (res.status === 501) {
+          setAiDisabled(true);
+        }
+        if (!aiDisabled) {
+          toast({ title: "AI unavailable", description: msg });
+        }
         setAiLoading(false);
         return;
       }
@@ -158,6 +179,15 @@ export default function Snap() {
   }
 
   async function onSubmit() {
+    if (submitting) return;
+    if (!hasMedia && !description.trim()) {
+      toast({
+        title: "Add details",
+        description:
+          "Add at least one photo/voice note or type a short description.",
+      });
+      return;
+    }
     const title = description
       ? `${description.substring(0, 40)}${description.length > 40 ? "…" : ""}`
       : "New Snap";
@@ -175,36 +205,69 @@ export default function Snap() {
       image: images[0],
     });
 
-    // Upload first image to Firebase Storage and create complaint document
+    // Upload media to Firebase Storage and create complaint document
     try {
-      let mediaUrl = "";
-      if (images[0]) {
-        const imgRef = ref(storage, `complaints/${id}/image_0`);
-        await uploadString(imgRef, images[0], "data_url");
-        mediaUrl = await getDownloadURL(imgRef);
+      setSubmitting(true);
+
+      // Upload all images
+      const imageUrls: string[] = [];
+      for (let i = 0; i < images.length; i++) {
+        const imgRef = ref(storage, `complaints/${id}/image_${i}`);
+        await uploadString(imgRef, images[i], "data_url");
+        const url = await getDownloadURL(imgRef);
+        imageUrls.push(url);
       }
+
+      // Upload audio if present
+      let audioUrl: string | null = null;
+      if (audioDataUrl) {
+        const audioRef = ref(storage, `complaints/${id}/voice_note`);
+        await uploadString(audioRef, audioDataUrl, "data_url");
+        audioUrl = await getDownloadURL(audioRef);
+      }
+
+      // Build fixed-length media_files array: up to 5 images + 1 audio
+      const media_files: { type: string; url: string }[] = Array.from(
+        { length: 6 },
+        () => ({ type: "", url: "" }),
+      );
+      for (let i = 0; i < Math.min(imageUrls.length, 5); i++) {
+        media_files[i] = { type: "image", url: imageUrls[i] };
+      }
+      if (audioUrl) {
+        const idx = Math.min(imageUrls.length, 5); // place audio after images
+        if (idx < 6) media_files[idx] = { type: "audio", url: audioUrl };
+      }
+
       const u = userStore.get();
       const user_id = u?.id || "anonymous";
       const coords = loc.coords;
+      const nowIso = new Date().toISOString();
+
       await setDoc(doc(db, "complaints", id), {
         complaint_id: id,
         user_id,
         title,
         description,
-        media_url: mediaUrl,
         category: "general",
-        location: coords ? { lat: coords.lat, lng: coords.lon } : undefined,
+        media_files,
+        location: {
+          lattitude: typeof coords?.lat === "number" ? coords.lat : 0,
+          longitude: typeof coords?.lon === "number" ? coords.lon : 0,
+        },
         status: "pending",
         priority: "medium",
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: nowIso,
+        updated_at: nowIso,
       });
+      toast({ title: "Submitted", description: "Thank you for reporting." });
+      navigate(`/submitted/${id}`);
+      return;
     } catch (err) {
       // Non-blocking
+    } finally {
+      setSubmitting(false);
     }
-
-    toast({ title: "Snap saved", description: "View it in My Snaps" });
-    navigate("/snaps");
   }
 
   const timeStr = useMemo(() => {
@@ -233,6 +296,7 @@ export default function Snap() {
           onChange={onFileChange}
           type="file"
           accept="image/*"
+          multiple
           capture="environment"
           className="hidden"
         />
@@ -286,52 +350,53 @@ export default function Snap() {
               <Loader2 className="size-4 animate-spin" />
             </div>
           ) : null}
-          {/* AI Auto-fill */}
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={aiLoading || !hasMedia}
-            onClick={() =>
-              runAI("Generate a concise description from the media")
-            }
-            className="absolute bottom-2 right-12 h-8 rounded-full px-2.5 text-xs shadow-sm"
-            aria-label="AI Auto-fill"
-          >
-            <Wand2 className="mr-1 size-4" />
-            Auto-fill
-          </Button>
-          {/* Mic control */}
-          {!recording ? (
+          {/* Controls: AI + Mic */}
+          <div className="absolute bottom-3 right-3 flex items-center gap-2">
             <Button
               type="button"
               variant="secondary"
-              size="icon"
-              onClick={startRecording}
-              className="absolute bottom-3 right-3 rounded-full shadow-sm"
-              aria-label="Record voice note"
+              size="sm"
+              disabled={aiLoading || !hasMedia || aiDisabled}
+              onClick={() =>
+                runAI("Generate a concise description from the media")
+              }
+              className="h-8 rounded-full px-2.5 text-xs shadow-sm"
+              aria-label="AI Auto-fill"
             >
-              <Mic />
+              <Wand2 className="mr-1 size-4" />
+              Auto-fill
             </Button>
-          ) : (
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={stopRecording}
-              className="absolute bottom-3 right-3 rounded-full shadow-sm"
-              aria-label="Stop recording"
-            >
-              <Square />
-            </Button>
-          )}
+            {!recording ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                onClick={startRecording}
+                className="rounded-full shadow-sm"
+                aria-label="Record voice note"
+              >
+                <Mic />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                onClick={stopRecording}
+                className="rounded-full shadow-sm"
+                aria-label="Stop recording"
+              >
+                <Square />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="pt-1">
           <Button
             className="w-full"
             onClick={onSubmit}
-            disabled={!description.trim()}
+            disabled={(!hasMedia && !description.trim()) || submitting}
           >
             <Check className="mr-2" /> Submit
           </Button>

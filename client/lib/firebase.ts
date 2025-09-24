@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyC6XtUDmKv0aul-zUL3TRH1i2UxWtgCLU0",
   authDomain: "crowd-monitoring-e1f70.firebaseapp.com",
   projectId: "crowd-monitoring-e1f70",
-  storageBucket: "crowd-monitoring-e1f70.firebasestorage.app",
+  storageBucket: "crowd-monitoring-e1f70.appspot.com",
   messagingSenderId: "1069463850395",
   appId: "1:1069463850395:web:f24d177297c60e0c50a53e",
   measurementId: "G-68VH97XQ6V",

@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import FormScreen from "@/components/auth/FormScreen";
+import { db, serverTimestamp } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
+import { toast } from "@/hooks/use-toast";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -33,31 +36,37 @@ export default function Signup() {
           const first = String(fd.get("first") || "");
           const last = String(fd.get("last") || "");
           const phone = String(fd.get("phone") || "");
-          const user_id = crypto.randomUUID();
+
+          // Persist pending profile to complete after verification
           try {
-            const next = {
-              id: user_id,
-              first,
-              last,
-              email,
-              phone,
-              role: "citizen",
-            };
-            localStorage.setItem("app:user", JSON.stringify(next));
-            localStorage.setItem("app:promptLocation", "1");
+            localStorage.setItem(
+              "app:pendingUser",
+              JSON.stringify({ first, last, phone, email }),
+            );
           } catch {}
+
           try {
-            const { db, serverTimestamp } = await import("@/lib/firebase");
-            const { doc, setDoc } = await import("firebase/firestore");
-            await setDoc(doc(db, "users", user_id), {
-              user_id,
-              name: `${first} ${last}`.trim(),
-              phone,
-              email,
-              role: "citizen",
-              joined_at: serverTimestamp(),
+            const res = await fetch("/api/auth/send-code", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, name: `${first} ${last}`.trim() }),
             });
-          } catch {}
+            if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              throw new Error(data?.error || `HTTP ${res.status}`);
+            }
+            toast({
+              title: "Verification sent",
+              description: `Check ${email} for the 6-digit code.`,
+            });
+          } catch (err: any) {
+            toast({
+              title: "Failed to send email",
+              description: String(err?.message ?? err),
+            });
+            return;
+          }
+
           navigate(`/auth/verify-email?email=${encodeURIComponent(email)}`);
         }}
         className="grid gap-4"

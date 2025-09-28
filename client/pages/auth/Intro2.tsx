@@ -1,5 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Mail } from "lucide-react";
+import { auth, db } from "@/lib/firebase";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { userStore } from "@/data/user";
+import { toast } from "@/hooks/use-toast";
 
 const IMG2 = "https://cdn.builder.io/api/v1/image/assets%2F9144d974659344579af7e37342ce7ad4%2F8feccd49e9cc4ccea26ccb93370d378c?format=webp&width=800";
 
@@ -17,9 +22,30 @@ function GoogleIcon() {
 
 export default function Intro2() {
   const navigate = useNavigate();
-  const onGoogle = () => {
-    // Mock until provider is connected
-    alert("Google sign-in will be wired once auth is connected.");
+  const onGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const u = result.user;
+      const uid = u.uid;
+      const name = u.displayName || "";
+      const [first, ...rest] = name.split(" ");
+      const last = rest.join(" ").trim();
+      await setDoc(doc(db, "users", uid), {
+        user_id: uid,
+        name,
+        email: u.email || "",
+        phone: u.phoneNumber || "",
+        role: "citizen",
+        joined_at: serverTimestamp(),
+      }, { merge: true });
+      userStore.save({ id: uid, first, last, email: u.email || "", phone: u.phoneNumber || "", role: "citizen" });
+      try { localStorage.setItem("app:promptLocation", "1"); } catch {}
+      toast({ title: "Signed in", description: `Welcome${first ? `, ${first}` : ""}!` });
+      navigate("/");
+    } catch (err: any) {
+      toast({ title: "Google sign-in failed", description: String(err?.message ?? err) });
+    }
   };
   return (
     <div className="min-h-screen relative">

@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LocationProvider } from "@/context/location";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { I18nProvider } from "@/context/i18n";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import Placeholder from "./pages/Placeholder";
@@ -29,8 +30,9 @@ const App = () => (
   <TooltipProvider>
     <Toaster />
     <Sonner />
-    <LocationProvider>
-      <BrowserRouter>
+    <I18nProvider>
+      <LocationProvider>
+        <BrowserRouter>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth/start" element={<Start />} />
@@ -51,8 +53,9 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
-    </LocationProvider>
+        </BrowserRouter>
+      </LocationProvider>
+    </I18nProvider>
   </TooltipProvider>
 );
 

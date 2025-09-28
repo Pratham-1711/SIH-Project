@@ -27,7 +27,7 @@ export default function Index() {
         time: "5:30 PM · Today",
         blurb:
           "Birrarung Marr playground softfall/tanbark needs topping up. Critical low level posing injury risk.",
-        image: "/placeholder.svg",
+        image: "https://images.unsplash.com/photo-1508908323884-8f8dfc4efc13?q=80&w=1200&auto=format&fit=crop",
       },
       {
         id: "2",
@@ -36,7 +36,7 @@ export default function Index() {
         time: "3:51 PM · Today",
         blurb:
           "Directional signs are dirty and require cleaning for visibility.",
-        image: "/placeholder.svg",
+        image: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=1200&auto=format&fit=crop",
       },
     ],
     [],
@@ -61,7 +61,7 @@ export default function Index() {
 
       {/* Hero */}
       <Link to="/account" className="group relative block overflow-hidden rounded-2xl" aria-label="Go to account">
-        <img src="/placeholder.svg" alt="Hero" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.02]" />
+        <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop" alt="Hero" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.02]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         <div className="pointer-events-none absolute bottom-3 left-4 text-white text-lg font-semibold drop-shadow">Spring into action</div>
       </Link>

@@ -4,6 +4,7 @@ import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { aiDescribe } from "./routes/ai-describe";
 import { sendCode, verifyCode } from "./routes/auth-otp";
+import { translate } from "./routes/translate";
 
 export function createServer() {
   const app = express();
@@ -24,6 +25,7 @@ export function createServer() {
   app.post("/api/ai/describe", aiDescribe);
   app.post("/api/auth/send-code", sendCode);
   app.post("/api/auth/verify-code", verifyCode);
+  app.post("/api/translate", translate);
 
   return app;
 }

@@ -1,6 +1,16 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
-export interface Coords { lat: number; lon: number }
+export interface Coords {
+  lat: number;
+  lon: number;
+}
 export interface LocationState {
   coords: Coords | null;
   cityLine: string | null; // e.g. "Melbourne, Victoria"
@@ -31,7 +41,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as { coords?: Coords; cityLine?: string };
+        const parsed = JSON.parse(raw) as {
+          coords?: Coords;
+          cityLine?: string;
+        };
         if (parsed.coords) setCoords(parsed.coords);
         if (parsed.cityLine) setCityLine(parsed.cityLine);
       }
@@ -40,9 +53,11 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
   const reverseGeocode = async (pos: Coords) => {
     try {
-      const resp = await fetch(`/api/reverse-geocode?lat=${encodeURIComponent(pos.lat)}&lon=${encodeURIComponent(pos.lon)}`);
+      const resp = await fetch(
+        `/api/reverse-geocode?lat=${encodeURIComponent(pos.lat)}&lon=${encodeURIComponent(pos.lon)}`,
+      );
       if (!resp.ok) return `${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`;
-      const data = await resp.json() as { line?: string };
+      const data = (await resp.json()) as { line?: string };
       return data.line || `${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`;
     } catch (e) {
       return `${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`;
@@ -54,7 +69,8 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       const coords = await new Promise<Coords>((resolve, reject) => {
-        if (!("geolocation" in navigator)) return reject(new Error("Geolocation not supported"));
+        if (!("geolocation" in navigator))
+          return reject(new Error("Geolocation not supported"));
         navigator.geolocation.getCurrentPosition(
           (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude }),
           (err) => reject(err),
@@ -64,7 +80,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
       setCoords(coords);
       const line = await reverseGeocode(coords);
       setCityLine(line);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ coords, cityLine: line }));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ coords, cityLine: line }),
+      );
     } catch (e: any) {
       setError(e?.message || "Failed to get location");
     } finally {
@@ -89,7 +108,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         if (!cityLine || now - lastGeocodeAt.current > 30000) {
           const line = await reverseGeocode(pos);
           setCityLine(line);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify({ coords: pos, cityLine: line }));
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ coords: pos, cityLine: line }),
+          );
           lastGeocodeAt.current = now;
         }
         setLoading(false);
@@ -104,7 +126,9 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
   const stopLive = useCallback(() => {
     if (watchId.current != null) {
-      try { navigator.geolocation.clearWatch(watchId.current); } catch {}
+      try {
+        navigator.geolocation.clearWatch(watchId.current);
+      } catch {}
       watchId.current = null;
     }
     setLive(false);
@@ -120,20 +144,45 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handler = () => startLive();
     window.addEventListener("app:requestLocation", handler as any);
-    return () => window.removeEventListener("app:requestLocation", handler as any);
+    return () =>
+      window.removeEventListener("app:requestLocation", handler as any);
   }, [startLive]);
 
-  const value = useMemo<LocationState>(() => ({ coords, cityLine, loading, error, live, requestLocation, startLive, stopLive }), [coords, cityLine, loading, error, live, requestLocation, startLive, stopLive]);
+  const value = useMemo<LocationState>(
+    () => ({
+      coords,
+      cityLine,
+      loading,
+      error,
+      live,
+      requestLocation,
+      startLive,
+      stopLive,
+    }),
+    [
+      coords,
+      cityLine,
+      loading,
+      error,
+      live,
+      requestLocation,
+      startLive,
+      stopLive,
+    ],
+  );
 
   return <LocationCtx.Provider value={value}>{children}</LocationCtx.Provider>;
 }
 
 export function useLocationState() {
   const ctx = useContext(LocationCtx);
-  if (!ctx) throw new Error("useLocationState must be used within LocationProvider");
+  if (!ctx)
+    throw new Error("useLocationState must be used within LocationProvider");
   return ctx;
 }
 
 export const locationStorage = {
-  promptNext() { localStorage.setItem(PROMPT_FLAG, "1"); },
+  promptNext() {
+    localStorage.setItem(PROMPT_FLAG, "1");
+  },
 };

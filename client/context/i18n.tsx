@@ -1,8 +1,24 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { settingsStore } from "@/data/user";
 
 export type LangCode =
-  | "en" | "hi" | "bn" | "pa" | "ta" | "te" | "mr" | "gu" | "ur" | "zh";
+  | "en"
+  | "hi"
+  | "bn"
+  | "pa"
+  | "ta"
+  | "te"
+  | "mr"
+  | "gu"
+  | "ur"
+  | "zh";
 
 type Dict = Record<string, string>;
 
@@ -20,7 +36,9 @@ function loadCache(): Record<string, Dict> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
-  } catch { return {}; }
+  } catch {
+    return {};
+  }
 }
 
 function saveCache(cache: Record<string, Dict>) {
@@ -28,8 +46,12 @@ function saveCache(cache: Record<string, Dict>) {
 }
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const initial = (settingsStore.get()?.language as LangCode) ||
-    (typeof window !== "undefined" ? (localStorage.getItem("app:language") as LangCode) : "en") || "en";
+  const initial =
+    (settingsStore.get()?.language as LangCode) ||
+    (typeof window !== "undefined"
+      ? (localStorage.getItem("app:language") as LangCode)
+      : "en") ||
+    "en";
   const [lang, setLangState] = useState<LangCode>(initial);
   const [cache, setCache] = useState<Record<string, Dict>>(() => loadCache());
 
@@ -38,44 +60,54 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute("data-lang", lang);
     const s = settingsStore.get();
     settingsStore.save({ ...s, language: lang });
-    try { localStorage.setItem("app:language", lang); } catch {}
+    try {
+      localStorage.setItem("app:language", lang);
+    } catch {}
   }, [lang]);
 
   const setLang = useCallback((l: LangCode) => setLangState(l), []);
 
-  const translateBatch = useCallback(async (phrases: string[], target: LangCode): Promise<Dict> => {
-    if (target === "en" || phrases.length === 0) return {};
-    const res = await fetch("/api/translate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ q: phrases, target })
-    });
-    if (!res.ok) return {};
-    const data = await res.json() as { translations: string[] };
-    const out: Dict = {};
-    phrases.forEach((p, i) => { out[p] = data.translations[i] ?? p; });
-    return out;
-  }, []);
+  const translateBatch = useCallback(
+    async (phrases: string[], target: LangCode): Promise<Dict> => {
+      if (target === "en" || phrases.length === 0) return {};
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ q: phrases, target }),
+      });
+      if (!res.ok) return {};
+      const data = (await res.json()) as { translations: string[] };
+      const out: Dict = {};
+      phrases.forEach((p, i) => {
+        out[p] = data.translations[i] ?? p;
+      });
+      return out;
+    },
+    [],
+  );
 
-  const t = useCallback((s: string) => {
-    if (!s) return s;
-    if (lang === "en") return s;
-    const bucket = cache[lang] || {};
-    const existing = bucket[s];
-    if (existing) return existing;
-    // schedule translation
-    void (async () => {
-      const upd = await translateBatch([s], lang);
-      if (Object.keys(upd).length) {
-        setCache((prev) => {
-          const next = { ...prev, [lang]: { ...(prev[lang] || {}), ...upd } };
-          saveCache(next);
-          return next;
-        });
-      }
-    })();
-    return s;
-  }, [lang, cache, translateBatch]);
+  const t = useCallback(
+    (s: string) => {
+      if (!s) return s;
+      if (lang === "en") return s;
+      const bucket = cache[lang] || {};
+      const existing = bucket[s];
+      if (existing) return existing;
+      // schedule translation
+      void (async () => {
+        const upd = await translateBatch([s], lang);
+        if (Object.keys(upd).length) {
+          setCache((prev) => {
+            const next = { ...prev, [lang]: { ...(prev[lang] || {}), ...upd } };
+            saveCache(next);
+            return next;
+          });
+        }
+      })();
+      return s;
+    },
+    [lang, cache, translateBatch],
+  );
 
   const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
 

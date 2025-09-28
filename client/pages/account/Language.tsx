@@ -20,7 +20,9 @@ export default function Language() {
   const change = (code: string) => {
     const next = { ...s, language: code };
     settingsStore.save(next);
-    try { localStorage.setItem("app:language", code); } catch {}
+    try {
+      localStorage.setItem("app:language", code);
+    } catch {}
     document.documentElement.lang = code;
     document.documentElement.setAttribute("data-lang", code);
     window.location.reload();
@@ -32,9 +34,14 @@ export default function Language() {
       <ul className="rounded-xl border bg-card">
         {LANGS.map((l) => (
           <li key={l.code}>
-            <button onClick={()=>change(l.code)} className="flex w-full items-center justify-between px-4 py-4 hover:bg-accent">
+            <button
+              onClick={() => change(l.code)}
+              className="flex w-full items-center justify-between px-4 py-4 hover:bg-accent"
+            >
               <span>{l.name}</span>
-              <span className="text-sm text-muted-foreground">{s.language === l.code ? "Selected" : "Select"}</span>
+              <span className="text-sm text-muted-foreground">
+                {s.language === l.code ? "Selected" : "Select"}
+              </span>
             </button>
           </li>
         ))}

@@ -30,7 +30,7 @@ export const aiDescribe: RequestHandler = async (req, res) => {
     };
 
     const genAI = new GoogleGenerativeAI(key);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || "gemini-1.5-flash-latest" });
 
     const parts: any[] = [
       {
@@ -41,8 +41,9 @@ export const aiDescribe: RequestHandler = async (req, res) => {
     const images: string[] = [];
     if (Array.isArray(imageDataUrls)) images.push(...imageDataUrls);
     if (imageDataUrl) images.push(imageDataUrl);
+    const imgLimited = images.slice(0, 2);
 
-    for (const img of images) {
+    for (const img of imgLimited) {
       try {
         const inline = dataUrlToInlineData(img);
         parts.push({ inlineData: inline });

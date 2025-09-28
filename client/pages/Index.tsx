@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocationState } from "@/context/location";
 import { Link } from "react-router-dom";
+import T from "@/components/T";
 
 interface FeedItem {
   id: string;
@@ -50,11 +51,11 @@ export default function Index() {
         <div className="mb-3 rounded-xl bg-foreground/5 px-4 py-3 text-sm flex items-start gap-3">
           <ShieldCheck className="mt-0.5 size-4 text-primary" />
           <div className="flex-1">
-            <p className="font-medium">See what's happening around you.</p>
-            <p className="text-muted-foreground">Provide your location to personalise the feed.</p>
+            <p className="font-medium"><T>See what's happening around you.</T></p>
+            <p className="text-muted-foreground"><T>Provide your location to personalise the feed.</T></p>
           </div>
           <Button size="sm" className="rounded-full px-3" onClick={loc.startLive} disabled={loc.loading}>
-            {loc.loading ? "Locating..." : "Provide"}
+            {loc.loading ? <T>Locating...</T> : <T>Provide</T>}
           </Button>
         </div>
       )}
@@ -63,7 +64,7 @@ export default function Index() {
       <Link to="/account" className="group relative block overflow-hidden rounded-2xl" aria-label="Go to account">
         <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop" alt="Hero" className="h-40 w-full object-cover transition-transform group-hover:scale-[1.02]" />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-        <div className="pointer-events-none absolute bottom-3 left-4 text-white text-lg font-semibold drop-shadow">Spring into action</div>
+        <div className="pointer-events-none absolute bottom-3 left-4 text-white text-lg font-semibold drop-shadow"><T>Spring into action</T></div>
       </Link>
 
       {/* Quick links */}
@@ -73,7 +74,7 @@ export default function Index() {
           <span className="inline-grid size-8 place-items-center rounded-full bg-white ring-2 ring-white shadow"><BadgeCheck className="size-4 text-primary"/></span>
           <span className="inline-grid size-8 place-items-center rounded-full bg-white ring-2 ring-white shadow"><BadgeCheck className="size-4 text-primary"/></span>
         </div>
-        <div className="text-sm font-medium">Solvers Near Me</div>
+        <div className="text-sm font-medium"><T>Solvers Near Me</T></div>
         <ChevronRight className="ml-auto size-4 opacity-60" />
       </div>
 

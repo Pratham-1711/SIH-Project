@@ -1,9 +1,15 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { userStore } from "@/data/user";
 
 const IMG1 = "https://cdn.builder.io/api/v1/image/assets%2F9144d974659344579af7e37342ce7ad4%2F8feccd49e9cc4ccea26ccb93370d378c?format=webp&width=800";
 
 export default function Start() {
   const navigate = useNavigate();
+  useEffect(() => {
+    const user = userStore.get();
+    if (user && user.id) navigate("/");
+  }, [navigate]);
   return (
     <div className="min-h-screen relative">
       <img

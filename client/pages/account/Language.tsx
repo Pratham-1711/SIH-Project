@@ -4,8 +4,14 @@ import { settingsStore } from "@/data/user";
 const LANGS = [
   { code: "en", name: "English" },
   { code: "hi", name: "हिन्दी (Hindi)" },
-  { code: "es", name: "Español" },
-  { code: "zh", name: "中文" },
+  { code: "bn", name: "বাংলা (Bengali)" },
+  { code: "pa", name: "ਪੰਜਾਬੀ (Punjabi)" },
+  { code: "mr", name: "मराठी (Marathi)" },
+  { code: "gu", name: "ગુજરાતી (Gujarati)" },
+  { code: "ta", name: "தமிழ் (Tamil)" },
+  { code: "te", name: "తెలుగు (Telugu)" },
+  { code: "ur", name: "اردو (Urdu)" },
+  { code: "zh", name: "中文 (Chinese Simplified)" },
 ];
 
 export default function Language() {
@@ -15,7 +21,9 @@ export default function Language() {
     const next = { ...s, language: code };
     settingsStore.save(next);
     try { localStorage.setItem("app:language", code); } catch {}
-    alert(`Language set to ${LANGS.find(l=>l.code===code)?.name}`);
+    document.documentElement.lang = code;
+    document.documentElement.setAttribute("data-lang", code);
+    window.location.reload();
   };
 
   return (

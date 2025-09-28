@@ -45,7 +45,7 @@ export const snapsStore = {
           createdAt: Date.now() - 1000 * 60 * 60 * 5,
           status: "submitted",
           location: "Near you",
-          image: "/placeholder.svg",
+          image: "https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?q=80&w=1200&auto=format&fit=crop",
         },
         {
           id: crypto.randomUUID(),
@@ -55,7 +55,7 @@ export const snapsStore = {
           createdAt: Date.now() - 1000 * 60 * 60 * 26,
           status: "in_progress",
           location: "CBD",
-          image: "/placeholder.svg",
+          image: "https://images.unsplash.com/photo-1513116476489-7635e79feb27?q=80&w=1200&auto=format&fit=crop",
         },
       ]);
     }

@@ -40,13 +40,10 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
 
   const reverseGeocode = async (pos: Coords) => {
     try {
-      const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pos.lat}&lon=${pos.lon}`;
-      const res = await fetch(url, { headers: { "Accept": "application/json" } });
-      const data = await res.json();
-      const city = data?.address?.city || data?.address?.town || data?.address?.suburb || data?.address?.county || "";
-      const state = data?.address?.state || data?.address?.region || "";
-      const line = [city, state].filter(Boolean).join(", ");
-      return line || `${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`;
+      const resp = await fetch(`/api/reverse-geocode?lat=${encodeURIComponent(pos.lat)}&lon=${encodeURIComponent(pos.lon)}`);
+      if (!resp.ok) return `${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`;
+      const data = await resp.json() as { line?: string };
+      return data.line || `${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`;
     } catch (e) {
       return `${pos.lat.toFixed(3)}, ${pos.lon.toFixed(3)}`;
     }

@@ -30,9 +30,12 @@ export const aiDescribe: RequestHandler = async (req, res) => {
     };
 
     const genAI = new GoogleGenerativeAI(key);
-    const model = genAI.getGenerativeModel({
-      model: process.env.GEMINI_MODEL || "gemini-1.5-flash",
-    });
+    const candidateModels = [
+      process.env.GEMINI_MODEL,
+      "gemini-1.5-flash-latest",
+      "gemini-1.5-flash-8b-latest",
+      "gemini-1.5-flash",
+    ].filter(Boolean) as string[];
 
     const parts: any[] = [
       {
@@ -61,12 +64,18 @@ export const aiDescribe: RequestHandler = async (req, res) => {
       parts.push({ text: `User notes: ${hint.trim()}` });
     }
 
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts }],
-    });
-    const text = result.response.text();
-
-    res.json({ description: text });
+    let lastErr: any = null;
+    for (const m of candidateModels) {
+      try {
+        const model = genAI.getGenerativeModel({ model: m });
+        const result = await model.generateContent({ contents: [{ role: "user", parts }] });
+        const text = result.response.text();
+        return res.json({ description: text });
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    throw lastErr || new Error("AI failed");
   } catch (err: any) {
     res.status(500).json({ error: err?.message ?? "AI error" });
   }

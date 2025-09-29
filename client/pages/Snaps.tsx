@@ -2,13 +2,43 @@ import MobileShell from "@/components/layout/MobileShell";
 import { snapsStore, SnapItem } from "@/data/snaps";
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, Clock, CheckCircle2 } from "lucide-react";
+import { userStore } from "@/data/user";
 
 export default function Snaps() {
   const [items, setItems] = useState<SnapItem[]>([]);
 
   useEffect(() => {
-    snapsStore.seedIfEmpty();
-    setItems(snapsStore.all());
+    const u = userStore.get();
+    const offlines = snapsStore.all();
+    setItems(offlines);
+    (async () => {
+      const { collection, onSnapshot, orderBy, query, where } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      const q = u?.id
+        ? query(collection(db, "complaints"), where("user_id", "==", u.id), orderBy("created_at", "desc"))
+        : query(collection(db, "complaints"), orderBy("created_at", "desc"));
+      onSnapshot(q, (snap) => {
+        const list: SnapItem[] = [];
+        snap.forEach((d) => {
+          const v: any = d.data();
+          const firstImg = Array.isArray(v.media_files)
+            ? (v.media_files.find((m: any) => m?.type === "image" && m?.url)?.url || "")
+            : "";
+
+          list.push({
+            id: v.complaint_id || d.id,
+            title: v.title || "Complaint",
+            category: v.category || "General",
+            description: v.description || "",
+            createdAt: Date.parse(v.created_at || new Date().toISOString()),
+            status: (v.status as any) || "submitted",
+            location: v.location ? `${v.location.lattitude?.toFixed?.(3) || ""}, ${v.location.longitude?.toFixed?.(3) || ""}` : "",
+            image: firstImg,
+          });
+        });
+        setItems(list.length ? list : offlines);
+      });
+    })();
   }, []);
 
   return (

@@ -2,13 +2,70 @@ import MobileShell from "@/components/layout/MobileShell";
 import { snapsStore, SnapItem } from "@/data/snaps";
 import { useEffect, useMemo, useState } from "react";
 import { BadgeCheck, Clock, CheckCircle2 } from "lucide-react";
+import { userStore } from "@/data/user";
 
 export default function Snaps() {
   const [items, setItems] = useState<SnapItem[]>([]);
 
   useEffect(() => {
-    snapsStore.seedIfEmpty();
-    setItems(snapsStore.all());
+    const u = userStore.get();
+    const offlines = snapsStore.all();
+    setItems(offlines);
+    (async () => {
+      const { collection, onSnapshot, orderBy, query, where } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      const q = u?.id
+        ? query(collection(db, "complaints"), where("user_id", "==", u.id), orderBy("created_at", "desc"))
+        : query(collection(db, "complaints"), orderBy("created_at", "desc"));
+      onSnapshot(q, (snap) => {
+        const list: SnapItem[] = [];
+        snap.forEach((d) => {
+          const v: any = d.data();
+          const firstImg = Array.isArray(v.media_files)
+            ? (v.media_files.find((m: any) => m?.type === "image" && m?.url)?.url || "")
+            : "";
+
+          list.push({
+            id: v.complaint_id || d.id,
+            title: v.title || "Complaint",
+            category: v.category || "General",
+            description: v.description || "",
+            createdAt: Date.parse(v.created_at || new Date().toISOString()),
+            status: (v.status as any) || "submitted",
+            location: v.location ? `${v.location.lattitude?.toFixed?.(3) || ""}, ${v.location.longitude?.toFixed?.(3) || ""}` : "",
+            image: firstImg,
+          });
+        });
+        setItems(list.length ? list : offlines);
+      }, async (err) => {
+        // Firestore listener error (likely missing composite index). Fallback to a safer fetch.
+        console.error('Snapshot error', err);
+        try {
+          const { getDocs, collection, orderBy, limit, query } = await import('firebase/firestore');
+          const { db } = await import('@/lib/firebase');
+          const q2 = query(collection(db, 'complaints'), orderBy('created_at', 'desc'), limit(10));
+          const snap2 = await getDocs(q2);
+          const list: SnapItem[] = [];
+          snap2.forEach((d:any)=>{
+            const v:any = d.data();
+            const firstImg = Array.isArray(v.media_files)?(v.media_files.find((m:any)=>m?.type==='image'&&m?.url)?.url||'') : '';
+            list.push({
+              id: v.complaint_id || d.id,
+              title: v.title || 'Complaint',
+              category: v.category || 'General',
+              description: v.description || '',
+              createdAt: Date.parse(v.created_at || new Date().toISOString()),
+              status: (v.status as any) || 'submitted',
+              location: v.location ? `${v.location.lattitude?.toFixed?.(3)||''}, ${v.location.longitude?.toFixed?.(3)||''}` : '',
+              image: firstImg,
+            });
+          });
+          setItems(list.length ? list : offlines);
+        } catch (e) {
+          console.error('Fallback fetch failed', e);
+        }
+      });
+    })();
   }, []);
 
   return (
@@ -55,7 +112,7 @@ function EmptyState() {
   );
 }
 
-function Status({ status }: { status: SnapItem["status"] }) {
+function Status({ status }: { status: SnapItem["status"] | string | undefined }) {
   const map = useMemo(
     () => ({
       submitted: { label: "Submitted", icon: <Clock className="size-4 text-primary" /> },
@@ -64,7 +121,8 @@ function Status({ status }: { status: SnapItem["status"] }) {
     }),
     [],
   );
-  const s = map[status];
+  const key = (status as string) || "submitted";
+  const s = map[key as keyof typeof map] || { label: String(status || "Unknown"), icon: <Clock className="size-4 text-muted-foreground" /> };
   return (
     <span className="inline-flex items-center gap-1">{s.icon} {s.label}</span>
   );

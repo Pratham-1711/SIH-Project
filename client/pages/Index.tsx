@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { useLocationState } from "@/context/location";
 import { Link } from "react-router-dom";
 import T from "@/components/T";
+import { useEffect, useState } from "react";
 
 interface FeedItem {
   id: string;
@@ -28,31 +29,32 @@ interface FeedItem {
 
 export default function Index() {
   const navigate = useNavigate();
-  const feed = useMemo<FeedItem[]>(
-    () => [
-      {
-        id: "1",
-        title: "Playground Equipment",
-        solver: "Melbourne City Council",
-        time: "5:30 PM · Today",
-        blurb:
-          "Birrarung Marr playground softfall/tanbark needs topping up. Critical low level posing injury risk.",
-        image:
-          "https://images.unsplash.com/photo-1508908323884-8f8dfc4efc13?q=80&w=1200&auto=format&fit=crop",
-      },
-      {
-        id: "2",
-        title: "Road Signage",
-        solver: "Melbourne City Council",
-        time: "3:51 PM · Today",
-        blurb:
-          "Directional signs are dirty and require cleaning for visibility.",
-        image:
-          "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?q=80&w=1200&auto=format&fit=crop",
-      },
-    ],
-    [],
-  );
+  const [feed, setFeed] = useState<FeedItem[]>([]);
+  useEffect(() => {
+    (async () => {
+      const { collection, onSnapshot, orderBy, limit, query } = await import("firebase/firestore");
+      const { db } = await import("@/lib/firebase");
+      const q = query(collection(db, "complaints"), orderBy("created_at", "desc"), limit(10));
+      onSnapshot(q, (snap) => {
+        const items: FeedItem[] = [];
+        snap.forEach((d) => {
+          const v: any = d.data();
+          const firstImg = Array.isArray(v.media_files)
+            ? (v.media_files.find((m: any) => m?.type === "image" && m?.url)?.url || "")
+            : "";
+          items.push({
+            id: v.complaint_id || d.id,
+            title: v.title || "Complaint",
+            solver: v.solver || "Local Authority",
+            time: v.created_at || "",
+            blurb: v.description || "",
+            image: firstImg || "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+          });
+        });
+        setFeed(items);
+      });
+    })();
+  }, []);
 
   const loc = useLocationState();
   return (

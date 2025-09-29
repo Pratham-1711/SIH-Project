@@ -295,7 +295,7 @@ export default function Snap() {
           ref={fileInputCam}
           onChange={onFileChange}
           type="file"
-          accept="image/*"
+          accept="image/*;capture=camera"
           multiple
           capture="environment"
           className="hidden"

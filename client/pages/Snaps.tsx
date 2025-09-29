@@ -37,6 +37,33 @@ export default function Snaps() {
           });
         });
         setItems(list.length ? list : offlines);
+      }, async (err) => {
+        // Firestore listener error (likely missing composite index). Fallback to a safer fetch.
+        console.error('Snapshot error', err);
+        try {
+          const { getDocs, collection, orderBy, limit, query } = await import('firebase/firestore');
+          const { db } = await import('@/lib/firebase');
+          const q2 = query(collection(db, 'complaints'), orderBy('created_at', 'desc'), limit(10));
+          const snap2 = await getDocs(q2);
+          const list: SnapItem[] = [];
+          snap2.forEach((d:any)=>{
+            const v:any = d.data();
+            const firstImg = Array.isArray(v.media_files)?(v.media_files.find((m:any)=>m?.type==='image'&&m?.url)?.url||'') : '';
+            list.push({
+              id: v.complaint_id || d.id,
+              title: v.title || 'Complaint',
+              category: v.category || 'General',
+              description: v.description || '',
+              createdAt: Date.parse(v.created_at || new Date().toISOString()),
+              status: (v.status as any) || 'submitted',
+              location: v.location ? `${v.location.lattitude?.toFixed?.(3)||''}, ${v.location.longitude?.toFixed?.(3)||''}` : '',
+              image: firstImg,
+            });
+          });
+          setItems(list.length ? list : offlines);
+        } catch (e) {
+          console.error('Fallback fetch failed', e);
+        }
       });
     })();
   }, []);
@@ -85,7 +112,7 @@ function EmptyState() {
   );
 }
 
-function Status({ status }: { status: SnapItem["status"] }) {
+function Status({ status }: { status: SnapItem["status"] | string | undefined }) {
   const map = useMemo(
     () => ({
       submitted: { label: "Submitted", icon: <Clock className="size-4 text-primary" /> },
@@ -94,7 +121,8 @@ function Status({ status }: { status: SnapItem["status"] }) {
     }),
     [],
   );
-  const s = map[status];
+  const key = (status as string) || "submitted";
+  const s = map[key as keyof typeof map] || { label: String(status || "Unknown"), icon: <Clock className="size-4 text-muted-foreground" /> };
   return (
     <span className="inline-flex items-center gap-1">{s.icon} {s.label}</span>
   );

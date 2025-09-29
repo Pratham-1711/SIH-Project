@@ -20,4 +20,5 @@ export interface AiDescribeRequest {
 
 export interface AiDescribeResponse {
   description: string;
+  category?: string;
 }

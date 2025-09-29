@@ -32,8 +32,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 47.4% 11.2%;
 
-    /* Brand green */
-    --primary: 94 46% 58%;
+    /* Brand green (darker) */
+    --primary: 94 46% 42%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -50,7 +50,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 94 46% 58%;
+    --ring: 94 46% 42%;
 
     /* Slightly rounder app surfaces */
     --radius: 0.75rem;
